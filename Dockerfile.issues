@@ -1,0 +1,5 @@
+FROM python:3.10-slim
+RUN pip install prometheus_client requests
+COPY gitlab_issues_exporter.py /app/gitlab_issues_exporter.py
+WORKDIR /app
+CMD ["python", "gitlab_issues_exporter.py"]

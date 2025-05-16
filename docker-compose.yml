@@ -1,0 +1,64 @@
+version: "3.7"
+
+services:
+  gitlab:
+    image: gitlab/gitlab-ce:latest
+    container_name: gitlab
+    hostname: gitlab
+    restart: always
+    ports:
+      - "443:443"
+      - "80:80"
+      - "22:22"
+    volumes:
+      - gitlab-config:/etc/gitlab
+      - gitlab-logs:/var/log/gitlab
+      - gitlab-data:/var/opt/gitlab
+
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    ports:
+      - "3000:3000"
+
+  gitlab-exporter:
+    image: mvisonneau/gitlab-ci-pipelines-exporter:latest
+    container_name: gitlab-exporter
+    environment:
+      - GITLAB_URL=http://gitlab
+      - GITLAB_TOKEN=__REPLACE_ME__
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./gitlab-ci-pipelines-exporter.yml:/etc/gitlab-ci-pipelines-exporter.yml
+    command: run --config=/etc/gitlab-ci-pipelines-exporter.yml
+
+  gitlab-issues-exporter:
+    build:
+      context: .
+      dockerfile: Dockerfile.issues
+    container_name: gitlab-issues-exporter
+    ports:
+      - "9200:9200"
+    restart: always
+
+  gitlab-runner:
+    image: gitlab/gitlab-runner:latest
+    container_name: gitlab-runner
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - gitlab-runner-config:/etc/gitlab-runner
+
+volumes:
+  gitlab-config:
+  gitlab-logs:
+  gitlab-data:
+  gitlab-runner-config:
